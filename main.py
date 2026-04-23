@@ -5,7 +5,7 @@ from config import PODCASTS
 from fetchers.rss import get_latest_episode, download_audio
 from transcribe.whisper import transcribe
 from notes.claude import generate_notes
-from publishers.line import push_podcast_notes
+from publishers.line import push_podcast_notes, push_error
 from storage.db import init_db, already_processed, mark_processed
 
 
@@ -30,47 +30,54 @@ def process_podcast(name: str, feed_url: str):
         print("  已處理過，跳過")
         return
 
-    # 下載音檔
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
-        tmp_path = tmp.name
+    tmp_path = None
+    try:
+        # 下載音檔
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
+            tmp_path = tmp.name
 
-    print("  下載音檔中...")
-    if not download_audio(episode["audio_url"], tmp_path):
-        return
+        print("  下載音檔中...")
+        if not download_audio(episode["audio_url"], tmp_path):
+            raise RuntimeError("音檔下載失敗")
 
-    size_mb = os.path.getsize(tmp_path) / 1024 / 1024
-    print(f"  檔案大小：{size_mb:.1f} MB")
+        size_mb = os.path.getsize(tmp_path) / 1024 / 1024
+        print(f"  檔案大小：{size_mb:.1f} MB")
 
-    # 轉錄
-    print("  Whisper 轉錄中...")
-    transcript = transcribe(tmp_path)
-    os.unlink(tmp_path)
-    print(f"  逐字稿長度：{len(transcript)} 字")
+        # 轉錄
+        print("  Whisper 轉錄中...")
+        transcript = transcribe(tmp_path)
+        print(f"  逐字稿長度：{len(transcript)} 字")
 
-    # 生成筆記
-    print("  Claude 整理筆記中...")
-    notes = generate_notes(name, episode["title"], transcript)
+        # 生成筆記
+        print("  Claude 整理筆記中...")
+        notes = generate_notes(name, episode["title"], transcript)
 
-    # 儲存
-    date_str = datetime.now().strftime("%Y-%m-%d")
-    filename = f"{date_str}_{slugify(name)}_{slugify(episode['title'])}.md"
-    out_path = os.path.join("outputs", filename)
+        # 儲存
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        filename = f"{date_str}_{slugify(name)}_{slugify(episode['title'])}.md"
+        out_path = os.path.join("outputs", filename)
 
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(f"# {episode['title']}\n")
-        f.write(f"**節目：** {name}  \n")
-        f.write(f"**發布：** {episode['published']}  \n")
-        f.write(f"**整理日期：** {date_str}  \n\n")
-        f.write("---\n\n")
-        f.write(notes)
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(f"# {episode['title']}\n")
+            f.write(f"**節目：** {name}  \n")
+            f.write(f"**發布：** {episode['published']}  \n")
+            f.write(f"**整理日期：** {date_str}  \n\n")
+            f.write("---\n\n")
+            f.write(notes)
 
-    print(f"  筆記已儲存：{out_path}")
+        print(f"  筆記已儲存：{out_path}")
 
-    # 推送摘要到 LINE
-    print("  推送到 LINE...")
-    push_podcast_notes(name, episode["title"], notes)
+        # 推送摘要到 LINE
+        print("  推送到 LINE...")
+        push_podcast_notes(name, episode["title"], notes)
+        mark_processed(episode["audio_url"], name, episode["title"])
 
-    mark_processed(episode["audio_url"], name, episode["title"])
+    except Exception as e:
+        print(f"  錯誤：{e}")
+        push_error(name, episode["title"], str(e))
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
 
 
 def main():

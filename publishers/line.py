@@ -33,6 +33,16 @@ def _extract_section(notes: str, heading: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def push_error(podcast_name: str, episode_title: str, error: str) -> None:
+    msg = (
+        f"⚠️ Podcast 筆記失敗\n\n"
+        f"節目：{podcast_name}\n"
+        f"集數：{episode_title}\n\n"
+        f"錯誤：{error[:200]}"
+    )
+    push_message(msg)
+
+
 def push_podcast_notes(podcast_name: str, episode_title: str, notes: str) -> None:
     topic = _extract_section(notes, "本集主題")
     points = _extract_section(notes, "重點觀點")
