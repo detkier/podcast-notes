@@ -1,0 +1,42 @@
+name: Podcast 筆記自動整理
+
+on:
+  schedule:
+    - cron: "0 1 * * 1"   # 每週一 09:00 台灣時間
+    - cron: "0 1 * * 4"   # 每週四 09:00 台灣時間（部分節目週中更新）
+  workflow_dispatch:       # 手動執行
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: 下載程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安裝 ffmpeg
+        run: sudo apt-get install -y ffmpeg
+
+      - name: 安裝套件
+        run: pip install requests feedparser openai anthropic python-dotenv
+
+      - name: 還原 processed.db 快取
+        uses: actions/cache@v4
+        with:
+          path: storage/processed.db
+          key: podcast-db-${{ runner.os }}
+          restore-keys: podcast-db-
+
+      - name: 執行
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+        run: python main.py

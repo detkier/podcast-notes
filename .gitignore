@@ -1,0 +1,8 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+outputs/
+storage/processed.db
+*.mp3
+*.m4a
