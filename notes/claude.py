@@ -11,6 +11,9 @@ def generate_notes(podcast_name: str, episode_title: str, transcript: str) -> st
             "role": "user",
             "content": f"""你是投資筆記整理助手。以下是 Podcast「{podcast_name}」的集數「{episode_title}」的逐字稿。
 
+整理前請先做以下校正：
+- 「儲值股票」→「處置股票」（台股處置制度，Whisper 常誤辨）
+
 請用繁體中文整理成結構化投資筆記，格式如下：
 
 ## 本集主題
