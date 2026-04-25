@@ -39,10 +39,12 @@ podcast-notes/
 
 ## Schedule（台灣時間）
 
-| 時間 | 觸發 |
-|------|------|
-| 每週一 09:00 | `cron: "0 1 * * 1"` |
-| 每週四 09:00 | `cron: "0 1 * * 4"` |
+| 時間 | 觸發 | 節目 |
+|------|------|------|
+| 每週一 20:00 | `cron: "0 12 * * 1"` | 股海飯桶 |
+| 每週三 20:00 | `cron: "0 12 * * 3"` | 股癌 |
+| 每週四 20:00 | `cron: "0 12 * * 4"` | 股海飯桶 |
+| 每週六 20:00 | `cron: "0 12 * * 6"` | 股癌 |
 
 ## Environment Variables
 
@@ -61,6 +63,7 @@ podcast-notes/
 |------|-----|
 | 股癌 Gooaye | `https://feeds.soundon.fm/podcasts/954689a5-3096-43a4-a80b-7810b219cef3.xml` |
 | 股海飯桶 | `https://feeds.soundon.fm/podcasts/537b7401-756c-4d0d-b1df-36a49e2793d3.xml` |
+| KUMA熊美股筆記 | `https://feeds.soundon.fm/podcasts/1ac54d64-3039-44c8-b43a-cd96a300f3f6.xml` |
 
 新增節目：在 `config.py` 的 `PODCASTS` dict 加一行即可。
 
