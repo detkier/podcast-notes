@@ -51,24 +51,21 @@ def push_podcast_notes(podcast_name: str, episode_title: str, notes: str) -> Non
     points = _extract_section(notes, "重點觀點")
     quote = _extract_section(notes, "金句")
 
-    # 盤勢：只取條列行，最多 5 行
+    # 盤勢：只取條列行，最多 3 行
     market_lines = [l for l in market.splitlines() if l.strip().startswith(("-", "•", "**"))]
-    market_short = "\n".join(market_lines[:5])
+    market_short = "\n".join(market_lines[:3])
 
-    # 產業分析：取各產業標題與第一行說明，最多 5 條
-    industry_lines = [l for l in industry.splitlines() if l.strip().startswith(("###", "-", "•")) and l.strip() != "---"]
-    industry_short = "\n".join(industry_lines[:8])
+    # 產業分析：只取 ### 標題，最多 5 個
+    industry_lines = [l.strip().lstrip("#").strip() for l in industry.splitlines() if l.strip().startswith("###")]
+    industry_short = "\n".join(f"• {l}" for l in industry_lines[:5])
 
-    # 個股：表格轉純文字，取名稱+看法欄，最多 6 檔
-    stock_lines = [l for l in stocks.splitlines() if "|" in l and "---" not in l and "股票" not in l and "產品" not in l]
-    stocks_short = "\n".join(
-        "• " + " | ".join(c.strip() for c in l.split("|") if c.strip())[:80]
-        for l in stock_lines[:6]
-    )
+    # 個股：只取名稱與一句看法，最多 5 檔
+    stock_names = [l.strip().lstrip("#").strip() for l in stocks.splitlines() if l.strip().startswith("###")]
+    stocks_short = "\n".join(f"• {l}" for l in stock_names[:5])
 
-    # 重點觀點：取前 5 條
-    point_lines = [l for l in points.splitlines() if l.strip().startswith(("1.", "2.", "3.", "4.", "5.", "-", "**"))]
-    points_short = "\n".join(point_lines[:8])
+    # 重點觀點：取前 4 條標題行
+    point_lines = [l for l in points.splitlines() if l.strip().startswith(("1.", "2.", "3.", "4.", "5."))]
+    points_short = "\n".join(point_lines[:4])
 
     # 金句：取第一條
     quote_line = next((l.strip().lstrip(">").strip() for l in quote.splitlines() if l.strip()), "")
