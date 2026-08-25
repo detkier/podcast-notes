@@ -13,6 +13,8 @@ def generate_notes(podcast_name: str, episode_title: str, transcript: str) -> st
 
 整理前請先做以下校正：
 - 「儲值股票」→「處置股票」（台股處置制度，Whisper 常誤辨）
+- 「戲劇院」→「矽晶圓」（Whisper 發音誤辨）
+- 「秀蘭集團」→「中美晶集團」（Whisper 誤辨公司名稱）
 
 請用繁體中文整理成結構化投資筆記，格式如下：
 
