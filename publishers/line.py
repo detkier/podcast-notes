@@ -43,6 +43,14 @@ def push_error(podcast_name: str, episode_title: str, error: str) -> None:
     push_message(msg)
 
 
+def _clean_markdown(text: str) -> str:
+    """移除 Markdown 符號，保留純文字。"""
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+    text = re.sub(r"^\s*#{1,3}\s*", "", text, flags=re.MULTILINE)
+    text = re.sub(r"\|\s*-+\s*\|.*", "", text)  # 移除表格分隔線
+    return text.strip()
+
+
 def push_podcast_notes(podcast_name: str, episode_title: str, notes: str) -> None:
     topic = _extract_section(notes, "本集主題")
     market = _extract_section(notes, "盤勢與市場動向")
@@ -51,39 +59,33 @@ def push_podcast_notes(podcast_name: str, episode_title: str, notes: str) -> Non
     points = _extract_section(notes, "重點觀點")
     quote = _extract_section(notes, "金句")
 
-    # 盤勢：只取條列行，最多 3 行
-    market_lines = [l for l in market.splitlines() if l.strip().startswith(("-", "•", "**"))]
-    market_short = "\n".join(market_lines[:3])
+    header = f"🎙 {podcast_name}｜《{episode_title}》\n\n"
 
-    # 產業分析：只取 ### 標題，最多 5 個
-    industry_lines = [l.strip().lstrip("#").strip() for l in industry.splitlines() if l.strip().startswith("###")]
-    industry_short = "\n".join(f"• {l}" for l in industry_lines[:5])
+    # 第一則：主題 + 盤勢 + 產業
+    msg1 = header
+    msg1 += f"📌 本集主題\n{topic}\n\n"
+    if market:
+        msg1 += f"📊 盤勢與市場動向\n{_clean_markdown(market)}\n\n"
+    if industry:
+        msg1 += f"🏭 產業分析\n{_clean_markdown(industry)}"
+    if len(msg1) > MAX_CHARS:
+        msg1 = msg1[:MAX_CHARS - 3] + "..."
+    push_message(msg1)
 
-    # 個股：只取名稱與一句看法，最多 5 檔
-    stock_names = [l.strip().lstrip("#").strip() for l in stocks.splitlines() if l.strip().startswith("###")]
-    stocks_short = "\n".join(f"• {l}" for l in stock_names[:5])
-
-    # 重點觀點：取前 4 條標題行
-    point_lines = [l for l in points.splitlines() if l.strip().startswith(("1.", "2.", "3.", "4.", "5."))]
-    points_short = "\n".join(point_lines[:4])
-
-    # 金句：取第一條
-    quote_line = next((l.strip().lstrip(">").strip() for l in quote.splitlines() if l.strip()), "")
-
-    msg = f"🎙 {podcast_name}\n《{episode_title}》\n\n"
-    msg += f"📌 本集主題\n{topic}\n\n"
-    if market_short:
-        msg += f"📊 盤勢\n{market_short}\n\n"
-    if industry_short:
-        msg += f"🏭 產業\n{industry_short}\n\n"
-    if stocks_short:
-        msg += f"📈 個股\n{stocks_short}\n\n"
-    if points_short:
-        msg += f"💡 重點觀點\n{points_short}\n\n"
-    if quote_line:
-        msg += f"💬 金句\n「{quote_line}」"
-
-    if len(msg) > MAX_CHARS:
-        msg = msg[:MAX_CHARS - 3] + "..."
-
-    push_message(msg)
+    # 第二則：個股 + 重點觀點 + 金句
+    msg2 = ""
+    if stocks:
+        # 個股：表格轉純文字
+        stock_lines = [l for l in stocks.splitlines()
+                       if l.strip() and "---" not in l and not l.strip().startswith("|股票") and not l.strip().startswith("|產品")]
+        msg2 += f"📈 個股\n" + "\n".join(stock_lines) + "\n\n"
+    if points:
+        msg2 += f"💡 重點觀點\n{_clean_markdown(points)}\n\n"
+    if quote:
+        quote_line = next((l.strip().lstrip(">").strip() for l in quote.splitlines() if l.strip()), "")
+        if quote_line:
+            msg2 += f"💬 金句\n「{quote_line}」"
+    if msg2:
+        if len(msg2) > MAX_CHARS:
+            msg2 = msg2[:MAX_CHARS - 3] + "..."
+        push_message(msg2)
