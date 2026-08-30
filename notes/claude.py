@@ -6,7 +6,7 @@ def generate_notes(podcast_name: str, episode_title: str, transcript: str) -> st
     client = Anthropic(api_key=ANTHROPIC_API_KEY)
     msg = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=2000,
+        max_tokens=4000,
         messages=[{
             "role": "user",
             "content": f"""你是投資筆記整理助手。以下是 Podcast「{podcast_name}」的集數「{episode_title}」的逐字稿。
